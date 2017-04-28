@@ -8,7 +8,9 @@ subcommand_help() {
   echo 'Available commands:'
   echo ' create  <sess_dir> <instance_type> <AMI>'
   echo ' destory <sess_dir>'
-  echo ' ssh     <sess_dir> <username>'
+  echo ' ssh     <sess_dir> <user>'
+  echo ' push    <sess_dir> <user> <local_file> <remote_file>'
+  echo ' pull    <sess_dir> <user> <remote_file> <local_file>'
   echo
   echo 'All commands store temporary data in a "session directory".'
 }
@@ -106,6 +108,26 @@ subcommand_ssh() {
   ssh -oStrictHostKeyChecking=no -i "$sessdir/key.pem" "$username@$ip"
 }
 
+subcommand_push() {
+  sessdir="$1"
+  username="$2"
+  local_file="$3"
+  remote_file="$4"
+  ip=$(cat "$sessdir/ip")
+  scp -r -oStrictHostKeyChecking=no -i "$sessdir/key.pem" \
+    "$local_file" "$username@$ip:$remote_file"
+}
+
+subcommand_pull() {
+  sessdir="$1"
+  username="$2"
+  remote_file="$3"
+  local_file="$4"
+  ip=$(cat "$sessdir/ip")
+  scp -r -oStrictHostKeyChecking=no -i "$sessdir/key.pem" \
+    "$username@$ip:$remote_file" "$local_file"
+}
+
 if [ $# -lt 1 ]; then
   subcommand_help >&2
   exit 1
@@ -132,6 +154,12 @@ elif [ "$1" = destroy ]; then
 elif [ "$1" = ssh ]; then
   if [ $# -eq 3 ]; then
     subcommand_ssh "$2" "$3"
+  else
+    bad_arg_count
+  fi
+elif [ "$1" = push ] || [ "$1" = pull ]; then
+  if [ $# -eq 5 ]; then
+    subcommand_$1 "$2" "$3" "$4" "$5"
   else
     bad_arg_count
   fi

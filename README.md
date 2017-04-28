@@ -8,4 +8,3 @@ This will be a script to quickly create and manage GPU instances on AWS. It will
    * Download & install latest Go
    * Setup GOPATH
    * Setup unixpickle/cuda env vars
- * Add `push` and `pull` wrappers around scp
