@@ -8,9 +8,11 @@ subcommand_help() {
   echo 'Available commands:'
   echo ' create  <sess_dir> <instance_type> <AMI>'
   echo ' destory <sess_dir>'
+  echo ' setup   (pipe into ssh command)'
   echo ' ssh     <sess_dir> <user>'
   echo ' push    <sess_dir> <user> <local_file> <remote_file>'
   echo ' pull    <sess_dir> <user> <remote_file> <local_file>'
+  echo ' help'
   echo
   echo 'All commands store temporary data in a "session directory".'
 }
@@ -87,10 +89,7 @@ subcommand_create() {
 
 subcommand_destroy() {
   sessdir="$1"
-  if [ ! -d "$sessdir" ]; then
-    echo "no session directory: $sessdir" >&2
-    exit 1
-  fi
+  check_sess_dir "$sessdir"
 
   uuid=$(cat "$sessdir/uuid")
 
@@ -101,9 +100,37 @@ subcommand_destroy() {
   aws ec2 delete-key-pair --key-name ${uuid}key
 }
 
+subcommand_setup() {
+  godl=$(curl -s https://golang.org/dl/ |
+    grep -e 'go.*\.linux-amd64\.tar\.gz' |
+    head -n 1 |
+    sed -E 's/^.*"(.*)".*$/\1/g')
+  if [ "$godl" = '' ]; then
+    echo 'failed to get URL' >&2
+    exit 1
+  fi
+
+  cat << EOF
+    cd ~
+    if [ ! -f .gpu_aws_setup_done ]; then
+      sudo yum -y install git curl || sudo apt-get -y install git curl
+      curl $godl >go.tar.gz
+      tar xf go.tar.gz
+      mkdir gopath
+      mkdir gopath/bin
+      mkdir gopath/src
+      echo 'export GOPATH=~/gopath' >>~/.bash_profile
+      echo 'export GOROOT=~/go' >>~/.bash_profile
+      echo 'export PATH=\$PATH:~/go/bin:~/gopath/bin' >>~/.bash_profile
+      touch .gpu_aws_setup_done
+    fi
+EOF
+}
+
 subcommand_ssh() {
   sessdir="$1"
   username="$2"
+  check_sess_dir "$sessdir"
   ip=$(cat "$sessdir/ip")
   ssh -oStrictHostKeyChecking=no -i "$sessdir/key.pem" "$username@$ip"
 }
@@ -113,6 +140,7 @@ subcommand_push() {
   username="$2"
   local_file="$3"
   remote_file="$4"
+  check_sess_dir "$sessdir"
   ip=$(cat "$sessdir/ip")
   scp -r -oStrictHostKeyChecking=no -i "$sessdir/key.pem" \
     "$local_file" "$username@$ip:$remote_file"
@@ -123,6 +151,7 @@ subcommand_pull() {
   username="$2"
   remote_file="$3"
   local_file="$4"
+  check_sess_dir "$sessdir"
   ip=$(cat "$sessdir/ip")
   scp -r -oStrictHostKeyChecking=no -i "$sessdir/key.pem" \
     "$username@$ip:$remote_file" "$local_file"
@@ -139,6 +168,13 @@ bad_arg_count() {
   exit 1
 }
 
+check_sess_dir() {
+  if [ ! -d "$1" ]; then
+    echo "no session directory: $1" >&2
+    exit 1
+  fi
+}
+
 if [ "$1" = create ]; then
   if [ $# -eq 4 ]; then
     subcommand_create "$2" "$3" "$4"
@@ -151,6 +187,8 @@ elif [ "$1" = destroy ]; then
   else
     bad_arg_count
   fi
+elif [ "$1" = setup ]; then
+  subcommand_setup
 elif [ "$1" = ssh ]; then
   if [ $# -eq 3 ]; then
     subcommand_ssh "$2" "$3"
