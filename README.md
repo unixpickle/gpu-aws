@@ -1,6 +1,6 @@
 # gpu-aws
 
-This will be a script to quickly create and manage GPU instances on AWS. It will be able to setup Go and [unixpickle/cuda](https://github.com/unixpickle/cuda) automatically. With this tool, it should be painless to train [anynet](https://github.com/unixpickle/anynet) models on AWS.
+This is a script for creating and managing GPU instances on AWS. It can setup Go and [unixpickle/cuda](https://github.com/unixpickle/cuda) automatically. With this tool, it should be painless to train [anynet](https://github.com/unixpickle/anynet) models on AWS.
 
 # Prerequisites
 
