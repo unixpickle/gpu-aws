@@ -45,8 +45,3 @@ When you are done with the instance, you can terminate it like so:
 $ gpu-aws destroy $SESSDIR
 $ rm -r $SESSDIR
 ```
-
-# TODO
-
- * Finish `setup` command
-   * Setup unixpickle/cuda env vars

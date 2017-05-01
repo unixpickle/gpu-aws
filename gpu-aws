@@ -116,12 +116,24 @@ subcommand_setup() {
       sudo yum -y install git curl || sudo apt-get -y install git curl
       curl $godl >go.tar.gz
       tar xf go.tar.gz
-      mkdir gopath
-      mkdir gopath/bin
-      mkdir gopath/src
-      echo 'export GOPATH=~/gopath' >>~/.bash_profile
-      echo 'export GOROOT=~/go' >>~/.bash_profile
-      echo 'export PATH=\$PATH:~/go/bin:~/gopath/bin' >>~/.bash_profile
+      mv go goroot
+      rm go.tar.gz
+      mkdir go
+      mkdir go/bin
+      mkdir go/src
+      echo 'export GOPATH=~/go' >>~/.bash_profile
+      echo 'export GOROOT=~/goroot' >>~/.bash_profile
+      echo 'export PATH=\$PATH:~/goroot/bin:~/go/bin' >>~/.bash_profile
+      if [ -d /usr/local/cuda ]; then
+        echo 'export CUDA_PATH=/usr/local/cuda' >>~/.bash_profile
+        echo 'export PATH=\$PATH:\$CUDA_PATH/bin' >>~/.bash_profile
+        echo 'export CPATH="\$CUDA_PATH/include/"'  >>~/.bash_profile
+        echo 'export CGO_LDFLAGS="\$CUDA_PATH/lib64/libcublas.so' \\
+          '\$CUDA_PATH/lib64/libcudart.so' \\
+          '\$CUDA_PATH/lib64/stubs/libcuda.so' \\
+          '\$CUDA_PATH/lib64/libcurand.so"' >>~/.bash_profile
+        echo 'export LD_LIBRARY_PATH=\$CUDA_PATH/lib64/' >>~/.bash_profile
+      fi
       touch .gpu_aws_setup_done
     fi
 EOF
