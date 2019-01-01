@@ -122,6 +122,7 @@ subcommand_setup() {
       mv go goroot
       rm go.tar.gz
       mkdir go go/bin go/src
+      echo 'set -o vi' >>~/.bash_profile
       echo 'export GOPATH=~/go' >>~/.bash_profile
       echo 'export GOROOT=~/goroot' >>~/.bash_profile
       echo 'export PATH=\$PATH:~/goroot/bin:~/go/bin' >>~/.bash_profile
