@@ -28,7 +28,7 @@ subcommand_create() {
   fi
   mkdir "$sessdir" || exit 1
 
-  uuid=$(echo $RANDOM $(date) | openssl md5)
+  uuid=$(echo $RANDOM $(date) | openssl md5 | cut -f 2 -d ' ')
   echo $uuid >"$sessdir/uuid" || exit 1
 
   echo 'Creating key pair...'
