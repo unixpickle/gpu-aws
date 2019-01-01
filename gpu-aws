@@ -1,12 +1,14 @@
 #!/bin/bash
 
 SECURITY_GROUP=unixpickle-gpu-aws
+AMI=ami-0f65671a86f061fcd
+
 
 subcommand_help() {
   echo 'Usage: gpu-aws <command> [args... | help]'
   echo
   echo 'Available commands:'
-  echo ' create  <sess_dir> <instance_type> <AMI>'
+  echo ' create  <sess_dir> <instance_type>'
   echo ' destory <sess_dir>'
   echo ' setup   (pipe into ssh command)'
   echo ' ssh     <sess_dir> <user>'
@@ -20,7 +22,6 @@ subcommand_help() {
 subcommand_create() {
   sessdir="$1"
   insttype="$2"
-  ami="$3"
   if [ -d "$sessdir" ]; then
     echo "session directory already exists: $sessdir" >&2
     exit 1
@@ -65,9 +66,9 @@ subcommand_create() {
       || exit 1
   fi
 
-  echo "Creating $insttype from AMI $ami..."
+  echo "Creating $insttype from AMI $AMI..."
   aws ec2 run-instances \
-    --image-id "$ami" \
+    --image-id "$AMI" \
     --security-group-ids $(cat "$sessdir/groupid") \
     --count 1 \
     --instance-type "$insttype" \
@@ -113,28 +114,28 @@ subcommand_setup() {
   cat << EOF
     cd ~
     if [ ! -f .gpu_aws_setup_done ]; then
-      sudo yum -y install git curl || sudo apt-get -y install git curl
+      sudo add-apt-repository -y ppa:graphics-drivers
+      sudo apt update
+      sudo apt install -y python3-pip git curl tmux nvidia-390
       curl $godl >go.tar.gz
       tar xf go.tar.gz
       mv go goroot
       rm go.tar.gz
-      mkdir go
-      mkdir go/bin
-      mkdir go/src
+      mkdir go go/bin go/src
       echo 'export GOPATH=~/go' >>~/.bash_profile
       echo 'export GOROOT=~/goroot' >>~/.bash_profile
       echo 'export PATH=\$PATH:~/goroot/bin:~/go/bin' >>~/.bash_profile
-      if [ -d /usr/local/cuda ]; then
-        echo 'export CUDA_PATH=/usr/local/cuda' >>~/.bash_profile
-        echo 'export PATH=\$PATH:\$CUDA_PATH/bin' >>~/.bash_profile
-        echo 'export CPATH="\$CUDA_PATH/include/"'  >>~/.bash_profile
-        echo 'export CGO_LDFLAGS="\$CUDA_PATH/lib64/libcublas.so' \\
-          '\$CUDA_PATH/lib64/libcudart.so' \\
-          '\$CUDA_PATH/lib64/stubs/libcuda.so' \\
-          '\$CUDA_PATH/lib64/libcurand.so"' >>~/.bash_profile
-        echo 'export LD_LIBRARY_PATH=\$CUDA_PATH/lib64/' >>~/.bash_profile
-      fi
+      echo 'export STATUSHUB_ROOT=$STATUSHUB_ROOT' >>~/.bash_profile
+      echo 'export STATUSHUB_PASS=$STATUSHUB_PASS' >>~/.bash_profile
+      echo 'export F1LE_ROOT=$F1LE_ROOT' >>~/.bash_profile
+      echo 'export F1LE_PASS=$F1LE_PASS' >>~/.bash_profile
+      source ~/.bash_profile
+      go get github.com/unixpickle/statushub/...
+      go get github.com/unixpickle/f1le/...
+      pip3 install torch
+      pip3 install numpy
       touch .gpu_aws_setup_done
+      sudo reboot
     fi
 EOF
 }
@@ -188,8 +189,8 @@ check_sess_dir() {
 }
 
 if [ "$1" = create ]; then
-  if [ $# -eq 4 ]; then
-    subcommand_create "$2" "$3" "$4"
+  if [ $# -eq 3 ]; then
+    subcommand_create "$2" "$3"
   else
     bad_arg_count
   fi
