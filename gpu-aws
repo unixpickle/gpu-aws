@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SECURITY_GROUP=unixpickle-gpu-aws
-AMI=ami-0f65671a86f061fcd
+AMI=ami-0c9ae74667b049f59
 
 
 subcommand_help() {
@@ -114,9 +114,8 @@ subcommand_setup() {
   cat << EOF
     cd ~
     if [ ! -f .gpu_aws_setup_done ]; then
-      sudo add-apt-repository -y ppa:graphics-drivers
       sudo apt update
-      sudo apt install -y python3-pip git curl tmux nvidia-390
+      sudo apt install -y git curl tmux
       curl $godl >go.tar.gz
       tar xf go.tar.gz
       mv go goroot
@@ -133,10 +132,8 @@ subcommand_setup() {
       source ~/.bash_profile
       go get github.com/unixpickle/statushub/...
       go get github.com/unixpickle/f1le/...
-      pip3 install torch
-      pip3 install numpy
+      sudo pip3 install torch numpy
       touch .gpu_aws_setup_done
-      sudo reboot
     fi
 EOF
 }
